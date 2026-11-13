@@ -7,7 +7,8 @@ import PhotoGallery from '@/components/book/PhotoGallery';
 import NotesSection from '@/components/book/NotesSection';
 import VisitHistory from '@/components/book/VisitHistory';
 import FormulaEditDialog from '@/components/book/FormulaEditDialog';
-import { useClient, useVisits } from '@/lib/bookApi';
+import { useClient, useVisits, useBookRefresh } from '@/lib/bookApi';
+import PullToRefresh from '@/components/PullToRefresh';
 import { daysSince } from '@/lib/book';
 
 export default function ClientCard() {
@@ -16,6 +17,7 @@ export default function ClientCard() {
   const { data: client, isLoading } = useClient(id);
   const { data: visits = [] } = useVisits();
   const [editOpen, setEditOpen] = useState(false);
+  const refresh = useBookRefresh();
 
   const mine = useMemo(() => visits.filter((v) => v.client_id === id), [visits, id]);
   const days = daysSince(mine[0]?.date);
@@ -24,6 +26,7 @@ export default function ClientCard() {
   if (!client) return <p className="p-5 text-muted-foreground">Client not found.</p>;
 
   return (
+    <PullToRefresh onRefresh={refresh}>
     <div className="pt-4 pb-8">
       <div className="px-5 flex items-start gap-3 mb-5">
         <button onClick={() => navigate(-1)} className="h-11 w-11 rounded-full bg-muted flex items-center justify-center shrink-0">
@@ -63,5 +66,6 @@ export default function ClientCard() {
 
       <FormulaEditDialog open={editOpen} onOpenChange={setEditOpen} client={client} />
     </div>
+    </PullToRefresh>
   );
 }

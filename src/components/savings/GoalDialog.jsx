@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import DateField from '@/components/DateField';
 import { patchList } from '@/lib/optimistic';
 
 export default function GoalDialog({ goal, onClose, onSaved }) {
@@ -62,7 +63,7 @@ export default function GoalDialog({ goal, onClose, onSaved }) {
 
         <Input placeholder="What are you saving for? (e.g. New laptop)" value={name} onChange={(e) => setName(e.target.value)} className="h-12" autoFocus />
         <Input type="number" inputMode="decimal" placeholder="Target amount" value={target} onChange={(e) => setTarget(e.target.value)} className="h-12" />
-        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12" />
+        <DateField value={date} placeholder="Target date (optional)" onChange={(e) => setDate(e.target.value)} className="h-12" />
         <Input placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} className="h-12" />
 
         <DialogFooter>

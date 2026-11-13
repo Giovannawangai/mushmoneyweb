@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useRefresh } from '@/lib/api';
+import DateField from '@/components/DateField';
 import { formatCurrencyExact } from '@/lib/money';
 
 const SOURCES = ['Salary', 'Freelance', 'Gift', 'Refund', 'Other'];
@@ -78,7 +79,7 @@ export default function AddIncome() {
       </div>
 
       <Input placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} className="h-12 mb-3" />
-      <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12 mb-2" />
+      <DateField value={date} onChange={(e) => setDate(e.target.value)} className="h-12 mb-2" />
 
       {error && <p className="text-sm text-red-500 mb-2 text-center">{error}</p>}
 

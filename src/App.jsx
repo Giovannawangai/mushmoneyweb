@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { ThemeProvider } from '@/lib/theme';
 import Layout from '@/components/Layout';
 import BookLayout from '@/components/book/BookLayout';
@@ -129,6 +130,7 @@ function App() {
             <AuthenticatedApp />
           </Router>
           <Toaster />
+          <ConfirmDialog />
         </QueryClientProvider>
       </ThemeProvider>
     </AuthProvider>

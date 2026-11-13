@@ -18,10 +18,10 @@ export default function GoalCard({ goal, onAddFunds, onEdit, onDelete }) {
             {goal.target_date ? ` · by ${goal.target_date}` : ''}
           </p>
         </div>
-        <button onClick={onEdit} aria-label={`Edit ${goal.name}`} className="h-9 w-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+        <button onClick={onEdit} aria-label={`Edit ${goal.name}`} className="h-11 w-11 rounded-full bg-muted flex items-center justify-center shrink-0">
           <Pencil className="h-4 w-4 text-muted-foreground" />
         </button>
-        <button onClick={onDelete} aria-label={`Delete ${goal.name}`} className="h-9 w-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+        <button onClick={onDelete} aria-label={`Delete ${goal.name}`} className="h-11 w-11 rounded-full bg-muted flex items-center justify-center shrink-0">
           <Trash2 className="h-4 w-4 text-red-500" />
         </button>
       </div>
@@ -36,7 +36,7 @@ export default function GoalCard({ goal, onAddFunds, onEdit, onDelete }) {
 
       <button
         onClick={onAddFunds}
-        className="w-full mt-3 h-10 rounded-xl border-2 border-border text-sm font-medium flex items-center justify-center gap-1.5 hover:bg-muted transition"
+        className="w-full mt-3 min-h-11 rounded-xl border-2 border-border text-sm font-medium flex items-center justify-center gap-1.5 hover:bg-muted transition"
       >
         <Plus className="h-4 w-4" /> Add to savings
       </button>

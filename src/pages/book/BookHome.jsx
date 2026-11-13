@@ -7,7 +7,8 @@ import ClientAvatar from '@/components/book/ClientAvatar';
 import RecentRow from '@/components/book/RecentRow';
 import StaleList from '@/components/book/StaleList';
 import NewClientDialog from '@/components/book/NewClientDialog';
-import { useClients, useVisits } from '@/lib/bookApi';
+import { useClients, useVisits, useBookRefresh } from '@/lib/bookApi';
+import PullToRefresh from '@/components/PullToRefresh';
 import { daysSince, STALE_DAYS } from '@/lib/book';
 
 export default function BookHome() {
@@ -15,10 +16,19 @@ export default function BookHome() {
   const { data: visits = [] } = useVisits();
   const [query, setQuery] = useState('');
   const [newOpen, setNewOpen] = useState(false);
+  const refresh = useBookRefresh();
 
   const enriched = useMemo(() => {
+    // One pass over the visits builds a per-client lookup, instead of scanning
+    // the whole visit list once for every client.
+    const byClient = new Map();
+    visits.forEach((v) => {
+      const list = byClient.get(v.client_id);
+      if (list) list.push(v);
+      else byClient.set(v.client_id, [v]);
+    });
     return clients.map((c) => {
-      const mine = visits.filter((v) => v.client_id === c.id);
+      const mine = byClient.get(c.id) || [];
       const last = mine[0];
       return {
         ...c,
@@ -53,6 +63,7 @@ export default function BookHome() {
   }, [enriched, query]);
 
   return (
+    <PullToRefresh onRefresh={refresh}>
     <div className="px-5 pt-5">
       <div className="relative mb-6">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -110,5 +121,6 @@ export default function BookHome() {
 
       <NewClientDialog open={newOpen} onOpenChange={setNewOpen} />
     </div>
+    </PullToRefresh>
   );
 }

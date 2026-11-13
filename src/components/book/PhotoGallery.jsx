@@ -14,7 +14,7 @@ export default function PhotoGallery({ visits }) {
     );
   }
   return (
-    <div className="flex gap-3 overflow-x-auto pb-2 -mx-5 px-5 snap-x">
+    <div data-ptr-ignore className="flex gap-3 overflow-x-auto pb-2 -mx-5 px-5 snap-x touch-pan-x">
       {withPhotos.map((v) => (
         <figure key={v.id} className="w-64 shrink-0 snap-start">
           <Image src={v.photo_url} alt={v.service} className="h-64 w-64 rounded-lg object-cover ring-1 ring-border" />

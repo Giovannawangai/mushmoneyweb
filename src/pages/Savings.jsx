@@ -8,10 +8,14 @@ import { formatCurrencyExact } from '@/lib/money';
 import GoalCard from '@/components/savings/GoalCard';
 import GoalDialog from '@/components/savings/GoalDialog';
 import AddFundsDialog from '@/components/savings/AddFundsDialog';
+import PullToRefresh from '@/components/PullToRefresh';
+import { useConfirm } from '@/components/ConfirmDialog';
 
 export default function Savings() {
   const { data: goals = [] } = useGoals();
   const qc = useQueryClient();
+  const confirm = useConfirm();
+  const refresh = () => qc.invalidateQueries({ queryKey: ['goals'] });
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState(null);
   const [funding, setFunding] = useState(null);
@@ -31,7 +35,8 @@ export default function Savings() {
   });
 
   const del = async (g) => {
-    if (!confirm(`Delete "${g.name}"?`)) return;
+    const ok = await confirm({ title: 'Delete goal', description: `Delete "${g.name}"?`, confirmText: 'Delete', destructive: true });
+    if (!ok) return;
     await deleteGoal.mutateAsync(g).catch(() => {});
   };
 
@@ -39,6 +44,7 @@ export default function Savings() {
   const totalTarget = goals.reduce((s, g) => s + (g.target_amount || 0), 0);
 
   return (
+    <PullToRefresh onRefresh={refresh}>
     <div className="px-5 pt-6">
       <div className="flex items-center justify-between mb-4">
         <div>
@@ -80,5 +86,6 @@ export default function Savings() {
       {editing && <GoalDialog goal={editing} onClose={() => setEditing(null)} onSaved={() => setEditing(null)} />}
       {funding && <AddFundsDialog goal={funding} onClose={() => setFunding(null)} onSaved={() => setFunding(null)} />}
     </div>
+    </PullToRefresh>
   );
 }

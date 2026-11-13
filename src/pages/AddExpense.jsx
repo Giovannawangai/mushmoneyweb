@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import CategoryPicker from '@/components/CategoryPicker';
+import DateField from '@/components/DateField';
 import { useCategories, useRefresh } from '@/lib/api';
 import { formatCurrencyExact } from '@/lib/money';
 
@@ -65,7 +66,7 @@ export default function AddExpense() {
       </div>
 
       <Input placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} className="h-12 mb-3" />
-      <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12 mb-2" />
+      <DateField value={date} onChange={(e) => setDate(e.target.value)} className="h-12 mb-2" />
 
       {error && <p className="text-sm text-red-500 mb-2 text-center">{error}</p>}
 

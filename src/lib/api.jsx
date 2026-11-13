@@ -1,11 +1,10 @@
 import { base44 } from '@/api/base44Client';
 import { useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import useLoadMoreOnScroll from '@/lib/useLoadMoreOnScroll';
 
-// Small first page for fast first paint; remaining pages are fetched in the
-// background up to the previous record ceiling so totals stay identical.
+// Small first page for fast first paint; further pages load on demand as the
+// user scrolls, so a screen never pulls the whole history up front.
 const PAGE_SIZE = 100;
-const MAX_RECORDS = 1000;
 
 const usePagedList = (queryKey, entity, sort) => {
   const query = useInfiniteQuery({
@@ -22,12 +21,7 @@ const usePagedList = (queryKey, entity, sort) => {
       data.pages.flatMap((page) => (Array.isArray(page) ? page : page?.items || [])),
   });
 
-  const loaded = query.data?.length ?? 0;
-  useEffect(() => {
-    if (query.hasNextPage && !query.isFetchingNextPage && loaded < MAX_RECORDS) {
-      query.fetchNextPage();
-    }
-  }, [query.hasNextPage, query.isFetchingNextPage, loaded, query.fetchNextPage]);
+  useLoadMoreOnScroll(query);
 
   return query;
 };

@@ -12,6 +12,9 @@ import CategoryRow from '@/components/CategoryRow';
 import BillRow from '@/components/BillRow';
 import TagBillRow from '@/components/TagBillRow';
 import BillDialog from '@/components/BillDialog';
+import PullToRefresh from '@/components/PullToRefresh';
+import { useConfirm } from '@/components/ConfirmDialog';
+import { useErrorToast } from '@/components/ErrorToast';
 
 const COLORS = ['#6366f1', '#f59e0b', '#ef4444', '#ec4899', '#14b8a6', '#8b5cf6', '#3b82f6', '#10b981', '#f97316', '#06b6d4', '#e11d48', '#84cc16'];
 const EMOJIS = ['🏠', '🍔', '⛽', '🎉', '🧸', '📺', '🛒', '💊', '✈️', '☕', '👕', '💻', '🎁', '🚗', '🐾', '📚'];
@@ -21,6 +24,8 @@ export default function Categories() {
   const { data: bills = [] } = useBills();
   const refresh = useRefresh(['categories', 'bills']);
   const qc = useQueryClient();
+  const confirm = useConfirm();
+  const showError = useErrorToast();
   const [editing, setEditing] = useState(null);
   const [adding, setAdding] = useState(null);
   const [billEditing, setBillEditing] = useState(null);
@@ -80,18 +85,20 @@ export default function Categories() {
     const msg = subs.length
       ? `Delete "${c.name}" and its ${subs.length} sub-tag(s)? Existing expenses keep their records.`
       : `Delete "${c.name}"? Existing expenses keep their records.`;
-    if (!confirm(msg)) return;
+    const ok = await confirm({ title: 'Delete tag', description: msg, confirmText: 'Delete', destructive: true });
+    if (!ok) return;
     await deleteCategory.mutateAsync(c).catch(() => {});
   };
 
   const delBill = async (b) => {
-    if (!confirm(`Delete "${b.name}"?`)) return;
+    const ok = await confirm({ title: 'Delete bill', description: `Delete "${b.name}"?`, confirmText: 'Delete', destructive: true });
+    if (!ok) return;
     await deleteBill.mutateAsync(b).catch(() => {});
   };
 
   const payBill = async (bill) => {
     if (window.self !== window.top) {
-      alert('Checkout only works from the published app. Open the app in a new tab to pay.');
+      showError('Checkout only works from the published app. Open the app in a new tab to pay.');
       return;
     }
     try {
@@ -106,10 +113,10 @@ export default function Categories() {
       if (res.data?.url) {
         window.location.href = res.data.url;
       } else {
-        alert(res.data?.error || 'Could not start checkout.');
+        showError(res.data?.error || 'Could not start checkout.');
       }
     } catch (e) {
-      alert('Could not start checkout.');
+      showError('Could not start checkout.');
     }
   };
 
@@ -143,16 +150,23 @@ export default function Categories() {
   });
 
   const delOtherBills = async () => {
-    if (!confirm(`Delete all ${otherBills.length} "Other bills"? This cannot be undone.`)) return;
+    const ok = await confirm({
+      title: 'Delete all bills',
+      description: `Delete all ${otherBills.length} "Other bills"? This cannot be undone.`,
+      confirmText: 'Delete all',
+      destructive: true,
+    });
+    if (!ok) return;
     await deleteOtherBills.mutateAsync(otherBills).catch(() => {});
   };
 
   return (
+    <PullToRefresh onRefresh={refresh}>
     <div className="px-5 pt-6 pb-10">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold">Tags & Bills</h1>
         <div className="flex items-center gap-2">
-          <button onClick={() => setBillAdding(true)} className="h-10 px-3 rounded-full bg-muted text-foreground flex items-center gap-1.5 text-sm font-medium">
+          <button onClick={() => setBillAdding(true)} className="min-h-11 h-11 px-3 rounded-full bg-muted text-foreground flex items-center gap-1.5 text-sm font-medium">
             <Receipt className="h-4 w-4" /> Bill
           </button>
         </div>
@@ -221,6 +235,7 @@ export default function Categories() {
         />
       )}
     </div>
+    </PullToRefresh>
   );
 }
 
@@ -322,7 +337,7 @@ function CategoryDialog({ category, categories, parentId: initialParentId, onClo
           <p className="text-xs text-muted-foreground mb-2">Emoji</p>
           <div className="grid grid-cols-8 gap-2">
             {EMOJIS.map((em) => (
-              <button key={em} type="button" onClick={() => setEmoji(em)} className={`h-9 rounded-lg text-lg ${emoji === em ? 'bg-muted ring-2 ring-primary' : 'bg-muted'}`}>
+              <button key={em} type="button" onClick={() => setEmoji(em)} aria-label={`Emoji ${em}`} className={`min-h-11 h-11 rounded-lg text-lg ${emoji === em ? 'bg-muted ring-2 ring-primary' : 'bg-muted'}`}>
                 {em}
               </button>
             ))}
@@ -333,7 +348,15 @@ function CategoryDialog({ category, categories, parentId: initialParentId, onClo
           <p className="text-xs text-muted-foreground mb-2">Color</p>
           <div className="flex flex-wrap gap-2">
             {COLORS.map((col) => (
-              <button key={col} type="button" onClick={() => setColor(col)} className={`h-8 w-8 rounded-full ${color === col ? 'ring-2 ring-offset-2 ring-foreground' : ''}`} style={{ backgroundColor: col }} />
+              <button
+                key={col}
+                type="button"
+                onClick={() => setColor(col)}
+                aria-label={`Color ${col}`}
+                className="h-11 w-11 rounded-full flex items-center justify-center"
+              >
+                <span className={`h-7 w-7 rounded-full ${color === col ? 'ring-2 ring-offset-2 ring-foreground' : ''}`} style={{ backgroundColor: col }} />
+              </button>
             ))}
           </div>
         </div>

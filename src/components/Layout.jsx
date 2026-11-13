@@ -88,7 +88,7 @@ function NavBtn({ to, label, icon: Icon, active, onClick }) {
   return (
     <Link to={to} onClick={onClick} className="flex flex-col items-center justify-center gap-1 flex-1 h-full">
       <Icon className={cn('h-5 w-5', active ? 'text-primary' : 'text-muted-foreground')} strokeWidth={active ? 2.5 : 2} />
-      <span className={cn('text-[10px]', active ? 'text-primary font-medium' : 'text-muted-foreground')}>{label}</span>
+      <span className={cn('text-sm', active ? 'text-primary font-medium' : 'text-muted-foreground')}>{label}</span>
     </Link>
   );
 }

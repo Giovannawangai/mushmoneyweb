@@ -1,9 +1,8 @@
 import { useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import useLoadMoreOnScroll from '@/lib/useLoadMoreOnScroll';
 
 const PAGE_SIZE = 100;
-const MAX_RECORDS = 1000;
 
 export const useClients = () =>
   useQuery({ queryKey: ['clients'], queryFn: () => base44.entities.Client.list('name', 500) });
@@ -26,12 +25,7 @@ export const useVisits = () => {
       data.pages.flatMap((page) => (Array.isArray(page) ? page : page?.items || [])),
   });
 
-  const loaded = query.data?.length ?? 0;
-  useEffect(() => {
-    if (query.hasNextPage && !query.isFetchingNextPage && loaded < MAX_RECORDS) {
-      query.fetchNextPage();
-    }
-  }, [query.hasNextPage, query.isFetchingNextPage, loaded, query.fetchNextPage]);
+  useLoadMoreOnScroll(query);
 
   return query;
 };

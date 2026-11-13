@@ -15,6 +15,8 @@ export default function PullToRefresh({ onRefresh, children }) {
 
   const handleStart = useCallback((e) => {
     if (window.scrollY > 0 || refreshing) return;
+    // Horizontal carousels opt out with data-ptr-ignore so a swipe never pulls the page.
+    if (e.target instanceof Element && e.target.closest('[data-ptr-ignore]')) return;
     startY.current = e.touches[0].clientY;
     pulling.current = true;
   }, [refreshing]);
@@ -56,7 +58,7 @@ export default function PullToRefresh({ onRefresh, children }) {
   }, [handleStart, handleMove, handleEnd]);
 
   return (
-    <div className="relative">
+    <div className="relative touch-pan-y">
       <motion.div
         animate={{ height: refreshing ? THRESHOLD : pull }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}

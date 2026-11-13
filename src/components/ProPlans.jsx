@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { useErrorToast } from '@/components/ErrorToast';
 
 const PLANS = [
   { id: 'monthly', name: 'Monthly', price: '$4.99', per: 'per month', note: 'Cancel anytime' },
@@ -12,10 +13,11 @@ export default function ProPlans() {
   const [plan, setPlan] = useState('yearly');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const showError = useErrorToast();
 
   const checkout = async () => {
     if (window.self !== window.top) {
-      alert('Checkout only works from the published app. Open the app in a new tab to upgrade.');
+      showError('Checkout only works from the published app. Open the app in a new tab to upgrade.');
       return;
     }
     setError('');

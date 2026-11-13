@@ -15,7 +15,7 @@ export default function BottomSheetSelect({ value, onChange, placeholder, option
         type="button"
         onClick={() => setOpen(true)}
         className={cn(
-          'flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm',
+          'flex min-h-11 h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm',
           triggerClassName
         )}
       >
@@ -40,7 +40,7 @@ export default function BottomSheetSelect({ value, onChange, placeholder, option
                   setOpen(false);
                 }}
                 className={cn(
-                  'w-full flex items-center justify-between rounded-lg px-3 py-3 text-left text-sm no-select',
+                  'w-full min-h-11 flex items-center justify-between rounded-lg px-3 py-3 text-left text-sm no-select',
                   o.value === value ? 'bg-muted font-medium' : 'hover:bg-muted/50'
                 )}
               >

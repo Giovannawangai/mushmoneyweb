@@ -29,7 +29,7 @@ export default function Section() {
   }, [filtered]);
 
   return (
-    <div className="px-5 pt-6 pb-10 min-h-screen bg-[#0c111d] text-white">
+    <div className="px-5 pt-6 pb-10 min-h-screen bg-background text-foreground">
       <SelectorHeader
         icon={Tag}
         title={name}
@@ -40,7 +40,8 @@ export default function Section() {
         action={
           <button
             onClick={() => navigate('/add')}
-            className="h-9 w-9 rounded-full bg-[#22252d] text-white flex items-center justify-center"
+            aria-label="Add expense"
+            className="h-11 w-11 rounded-full bg-muted text-foreground flex items-center justify-center"
           >
             <Plus className="h-5 w-5" />
           </button>
@@ -48,8 +49,8 @@ export default function Section() {
       />
 
       {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-[#1b2336] p-8 text-center">
-          <p className="text-sm text-[#9ca3af]">No expenses in this section yet.</p>
+        <div className="rounded-2xl border border-dashed border-border p-8 text-center">
+          <p className="text-sm text-muted-foreground">No expenses in this section yet.</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -58,21 +59,21 @@ export default function Section() {
             if (!items.length) return null;
             const catTotal = items.reduce((s, e) => s + Number(e.amount), 0);
             return (
-              <div key={cat.id} className="rounded-2xl bg-[#161e2e] overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-[#1b2336]">
-                  <h2 className="text-xs font-semibold uppercase tracking-wide text-[#9ca3af]">{cat.emoji} {cat.name}</h2>
-                  <span className="text-xs text-[#9ca3af]">{formatCurrency(catTotal)}</span>
+              <div key={cat.id} className="rounded-2xl bg-card border border-border overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{cat.emoji} {cat.name}</h2>
+                  <span className="text-xs text-muted-foreground">{formatCurrency(catTotal)}</span>
                 </div>
                 <div>
                   {items.map((e, i) => (
-                    <div key={e.id} className={`px-4 py-3 flex items-center gap-3 ${i > 0 ? 'border-t border-[#1b2336]' : ''}`}>
+                    <div key={e.id} className={`px-4 py-3 flex items-center gap-3 ${i > 0 ? 'border-t border-border' : ''}`}>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate text-white">{e.note || cat.name}</p>
-                        <p className="text-sm text-[#9ca3af]">
+                        <p className="font-medium truncate text-foreground">{e.note || cat.name}</p>
+                        <p className="text-sm text-muted-foreground">
                           {new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </p>
                       </div>
-                      <span className="font-semibold text-white">{formatCurrency(e.amount)}</span>
+                      <span className="font-semibold text-foreground">{formatCurrency(e.amount)}</span>
                     </div>
                   ))}
                 </div>

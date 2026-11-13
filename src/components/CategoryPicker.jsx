@@ -12,12 +12,12 @@ export default function CategoryPicker({ categories, value, onChange }) {
         key={c.id}
         type="button"
         onClick={() => onChange(c.id)}
-        className={`flex flex-col items-center gap-1 p-2 rounded-2xl border-2 transition ${
+        className={`flex flex-col items-center justify-center gap-1 p-2 min-h-11 rounded-2xl border-2 transition ${
           selected ? 'border-primary bg-muted' : 'border-transparent bg-muted'
         }`}
       >
         <span className="text-2xl">{c.emoji}</span>
-        <span className={`text-[11px] text-muted-foreground truncate w-full text-center ${sub ? 'text-[10px]' : ''}`}>{c.name}</span>
+        <span className="text-sm text-muted-foreground truncate w-full text-center">{c.name}</span>
       </button>
     );
   };

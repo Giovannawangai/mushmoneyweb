@@ -5,10 +5,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import CategoryPicker from '@/components/CategoryPicker';
+import DateField from '@/components/DateField';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { patchList } from '@/lib/optimistic';
 
 export default function ExpenseEditDialog({ expense, categories, onClose }) {
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const [amount, setAmount] = useState(String(expense.amount));
   const [categoryId, setCategoryId] = useState(expense.category_id);
   const [note, setNote] = useState(expense.note || '');
@@ -61,7 +64,8 @@ export default function ExpenseEditDialog({ expense, categories, onClose }) {
   };
 
   const del = async () => {
-    if (!confirm('Delete this expense?')) return;
+    const ok = await confirm({ title: 'Delete expense', description: 'Delete this expense?', confirmText: 'Delete', destructive: true });
+    if (!ok) return;
     setBusy(true);
     try {
       await deleteMutation.mutateAsync();
@@ -80,7 +84,7 @@ export default function ExpenseEditDialog({ expense, categories, onClose }) {
         <Input type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} className="h-12 text-lg" />
         <CategoryPicker categories={categories} value={categoryId} onChange={setCategoryId} />
         <Input placeholder="Note" value={note} onChange={(e) => setNote(e.target.value)} className="h-12" />
-        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12" />
+        <DateField value={date} onChange={(e) => setDate(e.target.value)} className="h-12" />
         <DialogFooter className="flex gap-2">
           <Button variant="destructive" onClick={del} disabled={busy}>
             Delete

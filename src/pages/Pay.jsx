@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatCurrencyExact } from '@/lib/money';
+import { useErrorToast } from '@/components/ErrorToast';
 
 const MODES = [
   { id: 'payment', label: 'One-time', icon: CreditCard },
@@ -18,6 +19,7 @@ export default function Pay() {
   const [mode, setMode] = useState('payment');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const showError = useErrorToast();
 
   const parsedAmount = parseFloat(amount) || 0;
 
@@ -27,7 +29,7 @@ export default function Pay() {
       return;
     }
     if (window.self !== window.top) {
-      alert('Checkout only works from the published app. Open the app in a new tab to pay.');
+      showError('Checkout only works from the published app. Open the app in a new tab to pay.');
       return;
     }
     setError('');
