@@ -1,16 +1,40 @@
 import React, { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { patchList } from '@/lib/optimistic';
 
 export default function BillDialog({ bill, onClose, onSaved }) {
   const isEdit = !!bill;
+  const qc = useQueryClient();
   const [name, setName] = useState(bill?.name || '');
   const [amount, setAmount] = useState(bill?.amount ? String(bill.amount) : '');
   const [interval, setInterval] = useState(bill?.interval || 'month');
   const [note, setNote] = useState(bill?.note || '');
   const [saving, setSaving] = useState(false);
+
+  const saveMutation = useMutation({
+    mutationFn: (payload) =>
+      isEdit ? base44.entities.Bill.update(bill.id, payload) : base44.entities.Bill.create(payload),
+    onMutate: async (payload) => {
+      await qc.cancelQueries({ queryKey: ['bills'] });
+      const previous = qc.getQueryData(['bills']);
+      qc.setQueryData(['bills'], (old) =>
+        patchList(old, (list) =>
+          isEdit
+            ? list.map((b) => (b.id === bill.id ? { ...b, ...payload } : b))
+            : [{ id: `temp-${Date.now()}`, ...payload }, ...list]
+        )
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous !== undefined) qc.setQueryData(['bills'], ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['bills'] }),
+  });
 
   const save = async () => {
     if (!name.trim() || !(parseFloat(amount) > 0)) return;
@@ -22,8 +46,7 @@ export default function BillDialog({ bill, onClose, onSaved }) {
       note: note.trim(),
     };
     try {
-      if (isEdit) await base44.entities.Bill.update(bill.id, payload);
-      else await base44.entities.Bill.create(payload);
+      await saveMutation.mutateAsync(payload);
       onSaved();
     } catch (e) {
       setSaving(false);

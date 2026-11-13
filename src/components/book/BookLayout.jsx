@@ -4,15 +4,19 @@ import { Users, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SHOP_NAME, SHOP_TAGLINE } from '@/lib/book';
 import { motion, AnimatePresence } from 'framer-motion';
+import useTabNavigation from '@/lib/useTabNavigation';
 
 const items = [
   { to: '/book', label: 'Clients', icon: Users },
   { to: '/book/dashboard', label: 'Shop', icon: BarChart3 },
 ];
 
+const TAB_ROOTS = items.map((item) => item.to);
+
 export default function BookLayout() {
   const { pathname } = useLocation();
   const isActive = (to) => (to === '/book' ? pathname === '/book' || pathname.startsWith('/book/client') : pathname === to);
+  const { onTabClick } = useTabNavigation(TAB_ROOTS, '/book');
 
   return (
     <div data-theme="clientbook" className="min-h-screen bg-background text-foreground font-body">
@@ -29,6 +33,7 @@ export default function BookLayout() {
               <Link
                 key={to}
                 to={to}
+                onClick={onTabClick(to)}
                 className={cn(
                   'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition',
                   active ? 'bg-brand text-brand-foreground font-semibold' : 'text-primary-foreground/80 hover:bg-white/10'
@@ -70,7 +75,7 @@ export default function BookLayout() {
       <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-card border-t border-border" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="max-w-2xl mx-auto flex h-16">
           {items.map(({ to, label, icon: Icon }) => (
-            <Link key={to} to={to} className="flex-1 flex flex-col items-center justify-center gap-1">
+            <Link key={to} to={to} onClick={onTabClick(to)} className="flex-1 flex flex-col items-center justify-center gap-1">
               <Icon className={cn('h-5 w-5', isActive(to) ? 'text-brand' : 'text-muted-foreground')} strokeWidth={isActive(to) ? 2.5 : 2} />
               <span className={cn('text-xs uppercase tracking-wider', isActive(to) ? 'text-brand font-semibold' : 'text-muted-foreground')}>
                 {label}

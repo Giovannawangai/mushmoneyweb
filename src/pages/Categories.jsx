@@ -4,7 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Plus, Receipt, Trash2 } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCategories, useBills, useRefresh } from '@/lib/api';
+import { patchList } from '@/lib/optimistic';
 import { formatCurrency } from '@/lib/money';
 import CategoryRow from '@/components/CategoryRow';
 import BillRow from '@/components/BillRow';
@@ -18,6 +20,7 @@ export default function Categories() {
   const { data: categories = [] } = useCategories();
   const { data: bills = [] } = useBills();
   const refresh = useRefresh(['categories', 'bills']);
+  const qc = useQueryClient();
   const [editing, setEditing] = useState(null);
   const [adding, setAdding] = useState(null);
   const [billEditing, setBillEditing] = useState(null);
@@ -39,21 +42,51 @@ export default function Categories() {
     });
   }, [bills, topLevel]);
 
+  const deleteCategory = useMutation({
+    mutationFn: async (c) => {
+      const subs = childrenOf(c.id);
+      await Promise.all(subs.map((s) => base44.entities.Category.delete(s.id)));
+      await base44.entities.Category.delete(c.id);
+    },
+    onMutate: async (c) => {
+      await qc.cancelQueries({ queryKey: ['categories'] });
+      const previous = qc.getQueryData(['categories']);
+      const ids = new Set([c.id, ...childrenOf(c.id).map((s) => s.id)]);
+      qc.setQueryData(['categories'], (old) => patchList(old, (list) => list.filter((x) => !ids.has(x.id))));
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous !== undefined) qc.setQueryData(['categories'], ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['categories'] }),
+  });
+
+  const deleteBill = useMutation({
+    mutationFn: (b) => base44.entities.Bill.delete(b.id),
+    onMutate: async (b) => {
+      await qc.cancelQueries({ queryKey: ['bills'] });
+      const previous = qc.getQueryData(['bills']);
+      qc.setQueryData(['bills'], (old) => patchList(old, (list) => list.filter((x) => x.id !== b.id)));
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous !== undefined) qc.setQueryData(['bills'], ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['bills'] }),
+  });
+
   const del = async (c) => {
     const subs = childrenOf(c.id);
     const msg = subs.length
       ? `Delete "${c.name}" and its ${subs.length} sub-tag(s)? Existing expenses keep their records.`
       : `Delete "${c.name}"? Existing expenses keep their records.`;
     if (!confirm(msg)) return;
-    await Promise.all(subs.map((s) => base44.entities.Category.delete(s.id)));
-    await base44.entities.Category.delete(c.id);
-    refresh();
+    await deleteCategory.mutateAsync(c).catch(() => {});
   };
 
   const delBill = async (b) => {
     if (!confirm(`Delete "${b.name}"?`)) return;
-    await base44.entities.Bill.delete(b.id);
-    refresh();
+    await deleteBill.mutateAsync(b).catch(() => {});
   };
 
   const payBill = async (bill) => {
@@ -94,10 +127,24 @@ export default function Categories() {
     });
   }, []);
 
+  const deleteOtherBills = useMutation({
+    mutationFn: (list) => Promise.all(list.map((b) => base44.entities.Bill.delete(b.id))),
+    onMutate: async (list) => {
+      await qc.cancelQueries({ queryKey: ['bills'] });
+      const previous = qc.getQueryData(['bills']);
+      const ids = new Set(list.map((b) => b.id));
+      qc.setQueryData(['bills'], (old) => patchList(old, (all) => all.filter((x) => !ids.has(x.id))));
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous !== undefined) qc.setQueryData(['bills'], ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['bills'] }),
+  });
+
   const delOtherBills = async () => {
     if (!confirm(`Delete all ${otherBills.length} "Other bills"? This cannot be undone.`)) return;
-    await Promise.all(otherBills.map((b) => base44.entities.Bill.delete(b.id)));
-    refresh();
+    await deleteOtherBills.mutateAsync(otherBills).catch(() => {});
   };
 
   return (
@@ -155,7 +202,7 @@ export default function Categories() {
           categories={categories}
           parentId={adding.parentId}
           onClose={() => setAdding(null)}
-          onSaved={() => { setAdding(null); refresh(); }}
+          onSaved={() => { setAdding(null); }}
         />
       )}
       {editing && (
@@ -163,14 +210,14 @@ export default function Categories() {
           category={editing}
           categories={categories}
           onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); refresh(); }}
+          onSaved={() => { setEditing(null); }}
         />
       )}
       {(billAdding || billEditing) && (
         <BillDialog
           bill={billEditing}
           onClose={() => { setBillAdding(false); setBillEditing(null); }}
-          onSaved={() => { setBillAdding(false); setBillEditing(null); refresh(); }}
+          onSaved={() => { setBillAdding(false); setBillEditing(null); }}
         />
       )}
     </div>
@@ -179,6 +226,7 @@ export default function Categories() {
 
 function CategoryDialog({ category, categories, parentId: initialParentId, onClose, onSaved }) {
   const isEdit = !!category;
+  const qc = useQueryClient();
   const [name, setName] = useState(category?.name || '');
   const [emoji, setEmoji] = useState(category?.emoji || '💸');
   const [color, setColor] = useState(category?.color || COLORS[0]);
@@ -192,6 +240,27 @@ function CategoryDialog({ category, categories, parentId: initialParentId, onClo
   );
   const parent = categories.find((c) => c.id === parentId);
 
+  const saveMutation = useMutation({
+    mutationFn: (data) =>
+      isEdit ? base44.entities.Category.update(category.id, data) : base44.entities.Category.create(data),
+    onMutate: async (data) => {
+      await qc.cancelQueries({ queryKey: ['categories'] });
+      const previous = qc.getQueryData(['categories']);
+      qc.setQueryData(['categories'], (old) =>
+        patchList(old, (list) =>
+          isEdit
+            ? list.map((c) => (c.id === category.id ? { ...c, ...data } : c))
+            : [...list, { id: `temp-${Date.now()}`, ...data }]
+        )
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous !== undefined) qc.setQueryData(['categories'], ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['categories'] }),
+  });
+
   const save = async () => {
     if (!name.trim()) return;
     setSaving(true);
@@ -204,8 +273,7 @@ function CategoryDialog({ category, categories, parentId: initialParentId, onClo
       parent_id: parentId || null,
     };
     try {
-      if (isEdit) await base44.entities.Category.update(category.id, payload);
-      else await base44.entities.Category.create(payload);
+      await saveMutation.mutateAsync(payload);
       onSaved();
     } catch (e) {
       setSaving(false);

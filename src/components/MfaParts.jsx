@@ -28,7 +28,7 @@ export function useAppInfo() {
 // shows them returns <MfaScreen> in place of its own layout instead of nesting them in its card.
 export function MfaScreen({ children }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8 pt-[calc(env(safe-area-inset-top)+2rem)]">
       <div className="w-full max-w-md bg-card rounded-2xl shadow-sm border border-border p-8">{children}</div>
     </div>
   );

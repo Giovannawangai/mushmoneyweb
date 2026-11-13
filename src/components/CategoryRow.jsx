@@ -21,10 +21,10 @@ export default function CategoryRow({ category, depth = 0, onAddSub, onEdit, onD
           <Plus className="h-4 w-4 text-muted-foreground" />
         </button>
       )}
-      <button onClick={() => onEdit(category)} className="h-11 w-11 rounded-full bg-muted flex items-center justify-center shrink-0">
+      <button onClick={() => onEdit(category)} aria-label={`Edit ${category.name}`} className="h-11 w-11 rounded-full bg-muted flex items-center justify-center shrink-0">
         <Pencil className="h-4 w-4 text-muted-foreground" />
       </button>
-      <button onClick={() => onDelete(category)} className="h-11 w-11 rounded-full bg-muted flex items-center justify-center shrink-0">
+      <button onClick={() => onDelete(category)} aria-label={`Delete ${category.name}`} className="h-11 w-11 rounded-full bg-muted flex items-center justify-center shrink-0">
         <Trash2 className="h-4 w-4 text-red-500" />
       </button>
     </div>

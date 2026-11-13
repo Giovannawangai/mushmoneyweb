@@ -1,29 +1,59 @@
 import React, { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import CategoryPicker from '@/components/CategoryPicker';
-import { useRefresh } from '@/lib/api';
+import { patchList } from '@/lib/optimistic';
 
 export default function ExpenseEditDialog({ expense, categories, onClose }) {
-  const refresh = useRefresh(['expenses']);
+  const qc = useQueryClient();
   const [amount, setAmount] = useState(String(expense.amount));
   const [categoryId, setCategoryId] = useState(expense.category_id);
   const [note, setNote] = useState(expense.note || '');
   const [date, setDate] = useState(expense.date);
   const [busy, setBusy] = useState(false);
 
+  const saveMutation = useMutation({
+    mutationFn: (data) => base44.entities.Expense.update(expense.id, data),
+    onMutate: async (data) => {
+      await qc.cancelQueries({ queryKey: ['expenses'] });
+      const previous = qc.getQueryData(['expenses']);
+      qc.setQueryData(['expenses'], (old) =>
+        patchList(old, (list) => list.map((e) => (e.id === expense.id ? { ...e, ...data } : e)))
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous !== undefined) qc.setQueryData(['expenses'], ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['expenses'] }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => base44.entities.Expense.delete(expense.id),
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ['expenses'] });
+      const previous = qc.getQueryData(['expenses']);
+      qc.setQueryData(['expenses'], (old) => patchList(old, (list) => list.filter((e) => e.id !== expense.id)));
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous !== undefined) qc.setQueryData(['expenses'], ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['expenses'] }),
+  });
+
   const save = async () => {
     setBusy(true);
     try {
-      await base44.entities.Expense.update(expense.id, {
+      await saveMutation.mutateAsync({
         amount: parseFloat(amount) || 0,
         category_id: categoryId,
         note: note.trim(),
         date,
       });
-      refresh();
       onClose();
     } catch (e) {
       setBusy(false);
@@ -34,8 +64,7 @@ export default function ExpenseEditDialog({ expense, categories, onClose }) {
     if (!confirm('Delete this expense?')) return;
     setBusy(true);
     try {
-      await base44.entities.Expense.delete(expense.id);
-      refresh();
+      await deleteMutation.mutateAsync();
       onClose();
     } catch (e) {
       setBusy(false);

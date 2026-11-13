@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Plus, PiggyBank } from 'lucide-react';
-import { useGoals, useRefresh } from '@/lib/api';
+import { useGoals } from '@/lib/api';
+import { patchList } from '@/lib/optimistic';
 import { formatCurrencyExact } from '@/lib/money';
 import GoalCard from '@/components/savings/GoalCard';
 import GoalDialog from '@/components/savings/GoalDialog';
@@ -9,15 +11,28 @@ import AddFundsDialog from '@/components/savings/AddFundsDialog';
 
 export default function Savings() {
   const { data: goals = [] } = useGoals();
-  const refresh = useRefresh(['goals']);
+  const qc = useQueryClient();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState(null);
   const [funding, setFunding] = useState(null);
 
+  const deleteGoal = useMutation({
+    mutationFn: (g) => base44.entities.Goal.delete(g.id),
+    onMutate: async (g) => {
+      await qc.cancelQueries({ queryKey: ['goals'] });
+      const previous = qc.getQueryData(['goals']);
+      qc.setQueryData(['goals'], (old) => patchList(old, (list) => list.filter((x) => x.id !== g.id)));
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous !== undefined) qc.setQueryData(['goals'], ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['goals'] }),
+  });
+
   const del = async (g) => {
     if (!confirm(`Delete "${g.name}"?`)) return;
-    await base44.entities.Goal.delete(g.id);
-    refresh();
+    await deleteGoal.mutateAsync(g).catch(() => {});
   };
 
   const totalSaved = goals.reduce((s, g) => s + (g.saved_amount || 0), 0);
@@ -61,9 +76,9 @@ export default function Savings() {
         ))}
       </div>
 
-      {adding && <GoalDialog onClose={() => setAdding(false)} onSaved={() => { setAdding(false); refresh(); }} />}
-      {editing && <GoalDialog goal={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); refresh(); }} />}
-      {funding && <AddFundsDialog goal={funding} onClose={() => setFunding(null)} onSaved={() => { setFunding(null); refresh(); }} />}
+      {adding && <GoalDialog onClose={() => setAdding(false)} onSaved={() => setAdding(false)} />}
+      {editing && <GoalDialog goal={editing} onClose={() => setEditing(null)} onSaved={() => setEditing(null)} />}
+      {funding && <AddFundsDialog goal={funding} onClose={() => setFunding(null)} onSaved={() => setFunding(null)} />}
     </div>
   );
 }

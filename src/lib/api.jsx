@@ -1,11 +1,40 @@
 import { base44 } from '@/api/base44Client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 
-export const useExpenses = () =>
-  useQuery({ queryKey: ['expenses'], queryFn: async () => base44.entities.Expense.list('-date', 1000) });
+// Small first page for fast first paint; remaining pages are fetched in the
+// background up to the previous record ceiling so totals stay identical.
+const PAGE_SIZE = 100;
+const MAX_RECORDS = 1000;
 
-export const useIncomes = () =>
-  useQuery({ queryKey: ['incomes'], queryFn: async () => base44.entities.Income.list('-date', 1000) });
+const usePagedList = (queryKey, entity, sort) => {
+  const query = useInfiniteQuery({
+    queryKey,
+    initialPageParam: undefined,
+    queryFn: ({ pageParam }) =>
+      base44.entities[entity].list({
+        sort,
+        limit: PAGE_SIZE,
+        ...(pageParam ? { cursor: pageParam } : {}),
+      }),
+    getNextPageParam: (lastPage) => (lastPage?.has_more ? lastPage.next_cursor : undefined),
+    select: (data) =>
+      data.pages.flatMap((page) => (Array.isArray(page) ? page : page?.items || [])),
+  });
+
+  const loaded = query.data?.length ?? 0;
+  useEffect(() => {
+    if (query.hasNextPage && !query.isFetchingNextPage && loaded < MAX_RECORDS) {
+      query.fetchNextPage();
+    }
+  }, [query.hasNextPage, query.isFetchingNextPage, loaded, query.fetchNextPage]);
+
+  return query;
+};
+
+export const useExpenses = () => usePagedList(['expenses'], 'Expense', '-date');
+
+export const useIncomes = () => usePagedList(['incomes'], 'Income', '-date');
 
 export const useBills = () =>
   useQuery({ queryKey: ['bills'], queryFn: async () => base44.entities.Bill.list('-created_date', 200) });
